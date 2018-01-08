@@ -50,13 +50,14 @@ int main()
 
 	
 	unsigned char buffer[size];				//to store the image data
+	int temp;
 
 	fread(buffer,sizeof(unsigned char),size,fIn);		//read image data
 
 	for(i=0;i<size;i++)					//increasing pixel values to get image bright
 	{
-		buffer[i] = buffer[i] + BRIGHTNESS_FACTOR;
-		buffer[i] = (buffer[i] > MAX_COLOR) ? MAX_COLOR : buffer[i];
+		temp = buffer[i] + BRIGHTNESS_FACTOR;
+		buffer[i] = (temp > MAX_COLOR) ? MAX_COLOR : temp;
 	}
 	
 	fwrite(buffer,sizeof(unsigned char),size,fOut);		//write back to the output image
