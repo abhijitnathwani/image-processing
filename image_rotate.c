@@ -1,3 +1,10 @@
+/**
+* @file image_rotate.c
+* @brief C program to rotate the image by 180-degree. ( Flipping)
+* @author Priya Shah
+* @version v1
+* @date 2018-01-10
+*/
 #include <stdio.h>
 
 int main()

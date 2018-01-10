@@ -1,3 +1,10 @@
+/**
+* @file image_dark.c
+* @brief C program to darken the image by reducing the pixel values.
+* @author Priya Shah
+* @version v1
+* @date 2018-01-10
+*/
 #include <stdio.h>
 #define THRESHOLD 40
 

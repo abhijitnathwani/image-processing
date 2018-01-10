@@ -1,3 +1,10 @@
+/**
+* @file black_white.c
+* @brief C program to convert image to pure black and white, without using any libraries.
+* @author Priya Shah
+* @version v1
+* @date 2018-01-10
+*/
 #include <stdio.h>
 #define THRESHOLD 128
 #define WHITE 255

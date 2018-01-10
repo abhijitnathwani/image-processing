@@ -1,3 +1,10 @@
+/**
+* @file image_colortosepia.c
+* @brief C Program to apply Sepia filter to RGB image.
+* @author Priya Shah
+* @version v1
+* @date 2018-01-10
+*/
 #include <stdio.h>
 #include <time.h>
 #define MAX_VALUE 255
