@@ -17,7 +17,7 @@ int main()
 	FILE *fIn = fopen("lena_color.bmp","r");					//Input File name
 	FILE *fOut = fopen("lena_gray.bmp","w+");		    		//Output File name
 
-	int i,j,y;
+	int i,j,x,y;
 	unsigned char byte[54];
 	
 	if(fIn==NULL)												// check if the input file has not been opened succesfully.
