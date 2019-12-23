@@ -12,25 +12,25 @@ int main()
 {
 	clock_t start, stop;
 
-	start = clock();											// Note the start time for profiling purposes.
+	start = clock();						// Note the start time for profiling purposes.
 
-	FILE *fIn = fopen("lena_color.bmp","r");					//Input File name
-	FILE *fOut = fopen("lena_blur_color.bmp","w+");		    		//Output File name
+	FILE *fIn = fopen("images/lena_color.bmp","r");			// Input File name
+	FILE *fOut = fopen("lena_blur_color.bmp","w+");		    	// Output File name
 
-	int i,j,y;
+	int i,j,y, x;
 	unsigned char byte[54];
-	
-	if(fIn==NULL)												// check if the input file has not been opened succesfully.
+
+	if(fIn==NULL)							// check if the input file has not been opened succesfully.
 	{											
 		printf("File does not exist.\n");
 	}
 
-	for(i=0;i<54;i++)											//read the 54 byte header from fIn
+	for(i=0;i<54;i++)						// read the 54 byte header from fIn
 	{									
 		byte[i] = getc(fIn);								
 	}
 
-	fwrite(byte,sizeof(unsigned char),54,fOut);					//write the header back
+	fwrite(byte,sizeof(unsigned char),54,fOut);			// write the header back
 
 	// extract image height, width and bitDepth from imageHeader 
 	int height = *(int*)&byte[18];
@@ -40,19 +40,19 @@ int main()
 	printf("width: %d\n",width);
 	printf("height: %d\n",height );
 
-	int size = height*width;									//calculate the image size
+	int size = height*width;					// calculate the image size
 
-	unsigned char buffer[size][3];								//store the input image data
-	unsigned char out[size][3];									//store the output image data
+	unsigned char buffer[size][3];					// store the input image data
+	unsigned char out[size][3];					// store the output image data
 
-	for(i=0;i<size;i++)											//read image data character by character
+	for(i=0;i<size;i++)						// read image data character by character
 	{
-		buffer[i][2]=getc(fIn);									//blue
-		buffer[i][1]=getc(fIn);									//green
-		buffer[i][0]=getc(fIn);									//red
+		buffer[i][2]=getc(fIn);					// blue
+		buffer[i][1]=getc(fIn);					// green
+		buffer[i][0]=getc(fIn);					// red
 	}
 
-	float v=1.0 / 9.0;											//initialize the blurrring kernel
+	float v=1.0 / 9.0;						// initialize the blurrring kernel
 	float kernel[3][3]={{v,v,v},
 						{v,v,v},
 						{v,v,v}};
@@ -67,7 +67,8 @@ int main()
 			for(i=-1;i<=1;++i)
 			{
 				for(j=-1;j<=1;++j)
-				{								//matrix multiplication with kernel with every color plane
+				{	
+					// matrix multiplication with kernel with every color plane
 					sum0=sum0+(float)kernel[i+1][j+1]*buffer[(x+i)*width+(y+j)][0];
 					sum1=sum1+(float)kernel[i+1][j+1]*buffer[(x+i)*width+(y+j)][1];
 					sum2=sum2+(float)kernel[i+1][j+1]*buffer[(x+i)*width+(y+j)][2];
@@ -79,7 +80,7 @@ int main()
 		}
 	}
 
-	for(i=0;i<size;i++)											//write image data back to the file
+	for(i=0;i<size;i++)						//write image data back to the file
 	{
 		putc(out[i][2],fOut);
 		putc(out[i][1],fOut);
