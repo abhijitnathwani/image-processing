@@ -12,8 +12,8 @@
 
 int main(){
 
-	FILE *fIn = fopen("lena512.bmp","r");				//Input File name
-	FILE *fOut = fopen("b_w.bmp","w+");		            //Output File name
+	FILE *fIn = fopen("images/lena512.bmp","r");				//Input File name
+	FILE *fOut = fopen("results_imgs/b_w.bmp","w+");		            //Output File name
 
 	int i;
 	unsigned char byte[54];								//to get the image header
