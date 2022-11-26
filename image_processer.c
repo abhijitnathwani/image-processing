@@ -1,9 +1,11 @@
 
 #include <stdio.h>
+#include <omp.h>
 
 #include "image_bright.c"
 #include "image_dark.c"
 #include "image_colortosepia.c"
+#include "image_simulate_cvd.c"
 
 // include function
 
@@ -36,9 +38,14 @@ int colored() {
 		buffer[i][0] = getc(fIn);									//red
     }
 
+    #pragma omp task
     image_colortosepia(header, size, buffer);
-    //      * image simulate
+
+    #pragma omp task
+    simulate_cvd(header, size, buffer);
     //      * image correct
+    // correct_cvd(header, size, buffer);
+
 
    	fclose(fIn);
 }
@@ -47,6 +54,9 @@ int main(int argc, char *argv[]) {
 
     // Load image uncolored
    	FILE *fIn = fopen("images/lena512.bmp","r");			//Input File name
+
+    double start, stop;
+    start = omp_get_wtime();
 
 	int i;
 	unsigned char header[54];
@@ -69,9 +79,6 @@ int main(int argc, char *argv[]) {
 	int width = *(int*)&header[22];
 	int bitDepth = *(int*)&header[28];
 
-	printf("width: %d\n",width);
-	printf("height: %d\n",height );
-
 	if(bitDepth <= 8)					//if ColorTable present, extract it.
 	{
 		fread(colorTable,sizeof(unsigned char),1024,fIn);
@@ -82,13 +89,18 @@ int main(int argc, char *argv[]) {
 
 	fread(buffer,sizeof(unsigned char),size,fIn);		//read image data
 
-    // Perform functions
-    //      * image dark
+    #pragma omp task
     image_dark(header, colorTable, size, buffer);
-    //      * image bright
+
+    #pragma omp task
     image_bright(header, colorTable, size, buffer);
 
-	fclose(fIn);
-
+    #pragma omp task
     colored();
+
+    #pragma omp barrier
+    stop = omp_get_wtime();
+
+	printf("Time: %lf ms\n",((double)(stop - start)*1000));
+	fclose(fIn);
 }
