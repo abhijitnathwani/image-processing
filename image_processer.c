@@ -1,16 +1,17 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <omp.h>
+#include <math.h>
 
 #include "image_bright.c"
 #include "image_dark.c"
 #include "image_colortosepia.c"
 #include "image_simulate_cvd.c"
-
-// include function
+#include "image_correct_cvd.c"
 
 int colored() {
-	FILE *fIn = fopen("images/lena_color.bmp","r");			// Input File name
+	FILE *fIn = fopen("images/nature-4080511_960_720.bmp","r");			// Input File name
 
 	unsigned char header[54];
 	int i;
@@ -38,19 +39,40 @@ int colored() {
 		buffer[i][0] = getc(fIn);									//red
     }
 
-    #pragma omp task
+#pragma omp parallel sections
+{
+    #pragma omp section
     image_colortosepia(header, size, buffer);
 
-    #pragma omp task
-    simulate_cvd(header, size, buffer);
-    //      * image correct
-    // correct_cvd(header, size, buffer);
+    #pragma omp section 
+	simulate_cvd_protanopia(header, size, buffer);
 
+    #pragma omp section
+	simulate_cvd_deuteranopia(header, size, buffer);
+
+    #pragma omp section
+	simulate_cvd_tritanopia(header, size, buffer);
+	
+    #pragma omp section
+	correct_cvd_protanopia(header, size, buffer);
+
+    #pragma omp section
+	correct_cvd_deuteranopia(header, size, buffer);
+
+    #pragma omp section
+	correct_cvd_tritanopia(header, size, buffer);
+}
 
    	fclose(fIn);
 }
+int C = 1;
 
 int main(int argc, char *argv[]) {
+
+    if(argc > 1)
+        C = atoi(argv[1]);
+
+    omp_set_num_threads(C);
 
     // Load image uncolored
    	FILE *fIn = fopen("images/lena512.bmp","r");			//Input File name
@@ -89,16 +111,18 @@ int main(int argc, char *argv[]) {
 
 	fread(buffer,sizeof(unsigned char),size,fIn);		//read image data
 
-    #pragma omp task
-    image_dark(header, colorTable, size, buffer);
+// #pragma omp parallel sections
+// {
+    // #pragma omp section 
+    // image_dark(header, colorTable, size, buffer);
 
-    #pragma omp task
-    image_bright(header, colorTable, size, buffer);
+    // #pragma omp section
+    // image_bright(header, colorTable, size, buffer);
 
-    #pragma omp task
+    // #pragma omp section
     colored();
+// }
 
-    #pragma omp barrier
     stop = omp_get_wtime();
 
 	printf("Time: %lf ms\n",((double)(stop - start)*1000));

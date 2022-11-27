@@ -1,3 +1,5 @@
+#ifndef __COLOR_BLINDNESS
+#define __COLOR_BLINDNESS
 
 #include <stdio.h>
 #include <math.h>
@@ -94,3 +96,5 @@ void correct_tritanopia(float l, float m, float s, float *ll, float *mm, float *
 	*ss = (-0.395913 * l) 	+ (0.801109 * m) 	+ (0.0 * s);
 
 }
+
+#endif // #ifndef __COLOR_BLINDNESS
