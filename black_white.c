@@ -5,17 +5,22 @@
 * @version v1
 * @date 2018-01-10
 */
+#include <omp.h>
 #include <stdio.h>
+#include <time.h>
 #define THRESHOLD 128
 #define WHITE 255
 #define BLACK 0
 
 int main(){
 
-	FILE *fIn = fopen("images/lena512.bmp","r");				//Input File name
-	FILE *fOut = fopen("results_imgs/b_w.bmp","w+");		            //Output File name
+	 FILE *fIn = fopen("extr-resurces/image-processing-images/img4.bmp","r");				//Input File name
+	//FILE *fIn = fopen("images/lena512.bmp","r");
+	FILE *fOut = fopen("results_imgs/b_w.bmp","w+");		           						 //Output File name
 
-	int i;
+	clock_t start, end;
+    double cpu_time_used;
+	int i, y;
 	unsigned char byte[54];								//to get the image header
 	unsigned char colorTable[1024];						//to get the colortable
 
@@ -38,24 +43,47 @@ int main(){
 
 	printf("width: %d\n",width);
 	printf("height: %d\n",height );
-
+	printf("bitDepth: %d\n",bitDepth );
 	int size=height*width;								//calculate image size
 
 	if(bitDepth<=8)										//if ColorTable present, extract it.
 	{
+		
 		fread(colorTable,sizeof(unsigned char),1024,fIn);
 		fwrite(colorTable,sizeof(unsigned char),1024,fOut);
 	}
 
-	unsigned char buffer[size];							//to store the image data
+	unsigned char buffer[size][3];							//to store the image data
 
-	fread(buffer,sizeof(unsigned char),size,fIn);		//read image data
+	//fread(buffer,sizeof(unsigned char),[size][3],fIn);		//read image data
+
+ 	start = clock();
+#pragma omp parallel for num_threads(4) private(y) 
+{
+
+
 
 	for(i=0;i<size;i++)									//store 0(black) and 255(white) values to buffer 
 		{
-			buffer[i] = (buffer[i] > THRESHOLD) ? WHITE : BLACK;
+		buffer[i][2]=getc(fIn);									
+		buffer[i][1]=getc(fIn);									
+		buffer[i][0]=getc(fIn);									
+		if((buffer[i][0] > THRESHOLD && buffer[i][1] > THRESHOLD)||(buffer[i][0] > THRESHOLD && buffer[i][2] > THRESHOLD)||(buffer[i][1] > THRESHOLD && buffer[i][2] > THRESHOLD)){
+		y= WHITE ;
+		}else{
+		y= BLACK ;	
 		}
-	
+		#pragma omp critical
+		{
+		putc(y,fOut);
+		putc(y,fOut);
+		putc(y,fOut);
+		}
+		}
+}
+	end = clock();
+ 	cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	printf("The excution time is %f\n", cpu_time_used);
 	fwrite(buffer,sizeof(unsigned char),size,fOut);		//write back to the output image
 
 	fclose(fIn);
