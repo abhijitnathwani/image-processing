@@ -8,55 +8,34 @@
 #include <stdio.h>
 #define THRESHOLD 40
 
-int main()
+int image_dark(unsigned char * header, unsigned char * colorTable ,int size, unsigned char * buffer)
 {
-	FILE *fIn = fopen("lena512.bmp","r");					//Input File name
-	FILE *fOut = fopen("lena_dark.bmp","w+");		    	//Output File name
+	FILE *fOut = fopen("out/lena_dark.bmp","w+");		    	//Output File name
 
 	int i;
-	unsigned char byte[54],colorTable[1024];
-	
-	if(fIn==NULL)											// check if the input file has not been opened succesfully.
-	{											
-		printf("File does not exist.\n");
-	}
 
-	for(i=0;i<54;i++)										//read the 54 byte header from fIn
-	{									
-		byte[i] = getc(fIn);								
-	}
-
-	fwrite(byte,sizeof(unsigned char),54,fOut);				//write the header back
+	fwrite(header,sizeof(unsigned char),54,fOut);				//write the header back
 
 	// extract image height, width and bitDepth from imageHeader 
-	int height = *(int*)&byte[18];
-	int width = *(int*)&byte[22];
-	int bitDepth = *(int*)&byte[28];
-
-	printf("width: %d\n",width);
-	printf("height: %d\n",height );
-
-	int size = height*width;								//calculate image size
+	int bitDepth = *(int*)&header[28];
 
 	if(bitDepth <= 8)										//if ColorTable present, extract it.
 	{
-		fread(colorTable,sizeof(unsigned char),1024,fIn);
 		fwrite(colorTable,sizeof(unsigned char),1024,fOut);
 	}
 
-	unsigned char buffer[size];								//to store the image data
-
-	fread(buffer,sizeof(unsigned char),size,fIn);			//read image data
-
+	unsigned char image_buffer[size];
+	// Parallelizable segment
 	for(i=0;i<size;i++)										//decreasing pixel values to get image bright
 	{
-		if(buffer[i] > THRESHOLD)
-			buffer[i] = buffer[i] - THRESHOLD;
+		if (buffer[i] > THRESHOLD) 
+			image_buffer[i] = buffer[i] - THRESHOLD;
+		else
+			image_buffer[i] = 0;
+		// image_buffer[i] = buffer[i];
 	}
 	
-	fwrite(buffer,sizeof(unsigned char),size,fOut);			//write back to the output image
-	
-	fclose(fIn);
+	fwrite(image_buffer,sizeof(unsigned char),size,fOut);			//write back to the output image
 	fclose(fOut);
 	
 	return 0;
