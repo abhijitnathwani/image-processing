@@ -9,9 +9,8 @@
 #include "image_colortosepia.c"
 //#include "image_simulate_cvd.c" //there is an issue related to this piece of code #To be reviewed 
 #include "image_correct_cvd.c"
+#include "image_rgbtogray.c"
 #include "black_white.c"
-#include "image_blur_color.c"
-#include "image_blur_gray.c"
 
 int colored() {
 
@@ -22,17 +21,19 @@ int colored() {
 	unsigned char header[54];
 	unsigned char colorTable[1024];
 	int i;
+	unsigned char colorTable[1024];
 
-    if(fIn==NULL)							// check if the input file has not been opened succesfully.
+	if(fIn==NULL)							// check if the input file has not been opened succesfully.
 	{											
 		printf("File does not exist.\n");
 	}
-#pragma omp parallel for num_threads(1) 
+		
+	#pragma omp parallel for num_threads(1) 
 	for(i=0;i<54;i++)						// read the 54 byte header from fIn
 	{								
 		header[i] = getc(fIn);								
 	}
-
+	
     int height = *(int*)&header[18];
 	int width = *(int*)&header[22];
 	int bitDepth = *(int*)&header[28];
@@ -44,19 +45,63 @@ int colored() {
 	}
 
 
-	int size = height*width;	
-									//calculate image size
-	unsigned char buffer[size][3];								//to store the image data
+	printf("bitDepth: %d\n", bitDepth);
 
-#pragma omp parallel for num_threads(1) 
-	for(i=0;i<size;i++){
-
-		buffer[i][2] = getc(fIn);									//blue
-		buffer[i][1] = getc(fIn);									//green
-		buffer[i][0] = getc(fIn);									//red
-
+	if (bitDepth <= 8) // if ColorTable present, extract it.
+	{
+		fread(colorTable, sizeof(unsigned char), 1024, fIn);
 	}
 
+	// int bufferLength = 0;
+	// if(height > width) {
+	// 	bufferLength = height;
+	// } else {
+	// 	bufferLength = width;
+	// }
+
+	int size = height*width;		//calculate image size
+	// unsigned char WHbuffer[width][height]; // to store the image data
+	unsigned char WHbuffer[width][height][3]; // to store the image data
+	// FILE *fOut = fopen("rgb_rotate.bmp", "w+"); // Output File name
+
+	for(int i=0;i<width;i++)											
+	{
+        for (int j=0;j<height;j++){
+            WHbuffer[i][j][2]=getc(fIn);									//blue
+            WHbuffer[i][j][1]=getc(fIn);									//green
+            WHbuffer[i][j][0]=getc(fIn);									//red
+        }
+	}
+
+
+	// fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
+	// if (bitDepth <= 8)								 // if ColorTable present, extract it.
+	// {
+	// 	fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
+	// }
+
+	// for (i = 0; i < width; i++)
+	// {
+	// 	for (int j = 0; j < height; j++)
+	// 	{
+	// 		putc(WHbuffer[i][j][2], fOut);
+	// 		putc(WHbuffer[i][j][1], fOut);
+	// 		putc(WHbuffer[i][j][0], fOut);
+	// 	}
+	// }
+
+	// fread(WHbuffer, sizeof(unsigned char), size, fIn); // read the image data
+
+	// unsigned char buffer[size][3];								//to store the image data
+
+// #pragma omp parallel for num_threads(1) 
+	// for(i=0;i<size;i++){
+
+	// 	buffer[i][2] = getc(fIn);									//blue
+	// 	buffer[i][1] = getc(fIn);									//green
+	// 	buffer[i][0] = getc(fIn);									//red
+
+	// }
 	printf("height: %d\n",height);
 	printf("width: %d\n",width);
 	printf("size: %d\n",size);
@@ -65,35 +110,40 @@ int colored() {
     // #pragma omp section
     // image_colortosepia(header, size, buffer);
 
-    // #pragma omp section 
-	// simulate_cvd_protanopia(header, size, buffer);
+		// #pragma omp section 
+		// simulate_cvd_protanopia(header, size, buffer);
 
-    // #pragma omp section
-	// simulate_cvd_deuteranopia(header, size, buffer);
+		// #pragma omp section
+		// simulate_cvd_deuteranopia(header, size, buffer);
 
-    // #pragma omp section
-	// simulate_cvd_tritanopia(header, size, buffer);
-	
-    // #pragma omp section
-	// correct_cvd_protanopia(header, size, buffer);
+		// #pragma omp section
+		// simulate_cvd_tritanopia(header, size, buffer);
+		
+		// #pragma omp section
+		// correct_cvd_protanopia(header, size, buffer);
 
-    // #pragma omp section
-	// correct_cvd_deuteranopia(header, size, buffer);
+		// #pragma omp section
+		// correct_cvd_deuteranopia(header, size, buffer);
 
-    // #pragma omp section
-	// correct_cvd_tritanopia(header, size, buffer);
+		// #pragma omp section
+		// correct_cvd_tritanopia(header, size, buffer);
 
-	 #pragma omp section
-	black_and_white(header, size, buffer, bitDepth, colorTable);
+		//  #pragma omp section
+		// black_and_white(header, size, buffer);
+
+		// #pragma omp section
+		// image_rgbtogray(header, size, buffer, bitDepth, colorTable);
 
 	 #pragma omp section
 	image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
 }
- 
+
    	fclose(fIn);
+	// fclose(fOut);
 	return 0;
 }
+
 
 int nonColored() {
 
