@@ -14,8 +14,8 @@ int main()
 
 	start = clock();											// Note the start time for profiling purposes.
 
-	FILE *fIn = fopen("lena_color.bmp","r");					//Input File name
-	FILE *fOut = fopen("lena_gray.bmp","w+");		    		//Output File name
+	FILE *fIn = fopen("extr-resurces/image-processing-images/img4.bmp","r");					//Input File name
+	FILE *fOut = fopen("results_imgs/lena_gray.bmp","w+");		    		//Output File name
 
 	int i,j,y;
 	unsigned char byte[54];
