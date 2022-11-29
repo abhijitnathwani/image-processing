@@ -16,7 +16,9 @@
 int colored() {
 	// FILE *fIn = fopen("images/nature-4080511_960_720.bmp","r");			// Input File name
 	// FILE *fIn = fopen("images/lena512.bmp", "r"); // Input File name
-	FILE *fIn = fopen("images/img4.bmp", "r"); // Input File name
+	// FILE *fIn = fopen("images/lena_color.bmp", "r"); // Input File name
+	FILE *fIn = fopen("images/airplane.bmp", "r"); // Input File name
+	// FILE *fIn = fopen("images/img4.bmp", "r"); // Input File name
 	unsigned char header[54];
 	int i;
 	unsigned char colorTable[1024];
@@ -43,16 +45,17 @@ int colored() {
 		fread(colorTable, sizeof(unsigned char), 1024, fIn);
 	}
 
-	int bufferLength = 0;
-	if(height > width) {
-		bufferLength = height;
-	} else {
-		bufferLength = width;
-	}
+	// int bufferLength = 0;
+	// if(height > width) {
+	// 	bufferLength = height;
+	// } else {
+	// 	bufferLength = width;
+	// }
 
 	int size = height*width;		//calculate image size
 	// unsigned char WHbuffer[width][height]; // to store the image data
 	unsigned char WHbuffer[width][height][3]; // to store the image data
+	// FILE *fOut = fopen("rgb_rotate.bmp", "w+"); // Output File name
 
 	for(int i=0;i<width;i++)											
 	{
@@ -62,6 +65,23 @@ int colored() {
             WHbuffer[i][j][0]=getc(fIn);									//red
         }
 	}
+
+	// fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
+	// if (bitDepth <= 8)								 // if ColorTable present, extract it.
+	// {
+	// 	fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
+	// }
+
+	// for (i = 0; i < width; i++)
+	// {
+	// 	for (int j = 0; j < height; j++)
+	// 	{
+	// 		putc(WHbuffer[i][j][2], fOut);
+	// 		putc(WHbuffer[i][j][1], fOut);
+	// 		putc(WHbuffer[i][j][0], fOut);
+	// 	}
+	// }
+
 	// fread(WHbuffer, sizeof(unsigned char), size, fIn); // read the image data
 
 	// unsigned char buffer[size][3];								//to store the image data
@@ -77,8 +97,8 @@ int colored() {
 	printf("height: %d\n",height);
 	printf("width: %d\n",width);
 	printf("sizw: %d\n",size);
-	#pragma omp parallel sections
-	{
+	// #pragma omp parallel sections
+	// {
 		// #pragma omp section
 		// image_colortosepia(header, size, buffer);
 
@@ -106,11 +126,12 @@ int colored() {
 		// #pragma omp section
 		// image_rgbtogray(header, size, buffer);
 
-		#pragma omp section
+		// #pragma omp section
 		image_rotate(header, height, width, WHbuffer, colorTable);
-	}
+	// }
 
    	fclose(fIn);
+	// fclose(fOut);
 	return 0;
 }
 
