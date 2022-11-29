@@ -18,6 +18,7 @@ int colored() {
 
 
 	FILE *fIn = fopen("images/lena512.bmp","r");			// Input File name
+	FILE *fIn3D = fopen("images/lena512.bmp","r");			// Input File name
 	unsigned char header[54];
 	unsigned char colorTable[1024];
 	int i;
@@ -38,70 +39,34 @@ int colored() {
 	int width = *(int*)&header[22];
 	int bitDepth = *(int*)&header[28];
 
-	if(bitDepth<=8)										//if ColorTable present, extract it.
-	{
-		
-		fread(colorTable,sizeof(unsigned char),1024,fIn);
-	}
-
-
-	printf("bitDepth: %d\n", bitDepth);
 
 	if (bitDepth <= 8) // if ColorTable present, extract it.
 	{
 		fread(colorTable, sizeof(unsigned char), 1024, fIn);
 	}
 
-	// int bufferLength = 0;
-	// if(height > width) {
-	// 	bufferLength = height;
-	// } else {
-	// 	bufferLength = width;
-	// }
-
 	int size = height*width;		//calculate image size
-	// unsigned char WHbuffer[width][height]; // to store the image data
-	unsigned char WHbuffer[width][height][3]; // to store the image data
-	// FILE *fOut = fopen("rgb_rotate.bmp", "w+"); // Output File name
+	unsigned char D3buffer[width][height][3]; // to store the image data
 
 	for(int i=0;i<width;i++)											
 	{
         for (int j=0;j<height;j++){
-            WHbuffer[i][j][2]=getc(fIn);									//blue
-            WHbuffer[i][j][1]=getc(fIn);									//green
-            WHbuffer[i][j][0]=getc(fIn);									//red
+            D3buffer[i][j][2]=getc(fIn3D);									//blue
+            D3buffer[i][j][1]=getc(fIn3D);									//green
+            D3buffer[i][j][0]=getc(fIn3D);									//red
         }
 	}
 
+	unsigned char buffer[size][3];								//to store the image data
 
-	// fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
-	// if (bitDepth <= 8)								 // if ColorTable present, extract it.
-	// {
-	// 	fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
-	// }
+#pragma omp parallel for num_threads(1) 
+	for(i=0;i<size;i++){
 
-	// for (i = 0; i < width; i++)
-	// {
-	// 	for (int j = 0; j < height; j++)
-	// 	{
-	// 		putc(WHbuffer[i][j][2], fOut);
-	// 		putc(WHbuffer[i][j][1], fOut);
-	// 		putc(WHbuffer[i][j][0], fOut);
-	// 	}
-	// }
+		buffer[i][2] = getc(fIn);									//blue
+		buffer[i][1] = getc(fIn);									//green
+		buffer[i][0] = getc(fIn);									//red
 
-	// fread(WHbuffer, sizeof(unsigned char), size, fIn); // read the image data
-
-	// unsigned char buffer[size][3];								//to store the image data
-
-// #pragma omp parallel for num_threads(1) 
-	// for(i=0;i<size;i++){
-
-	// 	buffer[i][2] = getc(fIn);									//blue
-	// 	buffer[i][1] = getc(fIn);									//green
-	// 	buffer[i][0] = getc(fIn);									//red
-
-	// }
+	}
 	printf("height: %d\n",height);
 	printf("width: %d\n",width);
 	printf("size: %d\n",size);
@@ -131,12 +96,11 @@ int colored() {
 		//  #pragma omp section
 		// black_and_white(header, size, buffer);
 
-		// #pragma omp section
-		// image_rgbtogray(header, size, buffer, bitDepth, colorTable);
+	 	#pragma omp section
+		image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
-	 #pragma omp section
-	image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
-
+		#pragma omp section
+		image_rgbtogray(header, size, D3buffer, bitDepth, colorTable);
 }
 
    	fclose(fIn);
@@ -209,12 +173,12 @@ int main(int argc, char *argv[]) {
     double CStart, CStop,NCStart, NCStop;
    #pragma parallel omp parallel
     CStart = omp_get_wtime();
-	omp_set_num_threads(3);
+	omp_set_num_threads(9);
     colored();
 	CStop = omp_get_wtime();
 
 	NCStart = omp_get_wtime();
-	omp_set_num_threads(9);
+	omp_set_num_threads(3);
 	nonColored();
     NCStop = omp_get_wtime();
 
