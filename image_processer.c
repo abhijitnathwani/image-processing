@@ -13,6 +13,8 @@
 #include "black_white.c"
 #include "image_blur_color.c"
 #include "image_blur_gray.c"
+#include "image_rotate.c"
+
 
 int colored() {
 
@@ -102,7 +104,9 @@ int colored() {
 		image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
 		// #pragma omp section
-		// image_rgbtogray(header, size, D3buffer, bitDepth, colorTable);
+		// image_rgbtogray(header, size, buffer, bitDepth, colorTable);
+		#pragma omp section
+		image_rotate(header, height, width, D3buffer , colorTable);
 }
 
    	fclose(fIn);
