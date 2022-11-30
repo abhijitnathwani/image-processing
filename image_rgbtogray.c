@@ -17,17 +17,15 @@ int image_rgbtogray(int threads, unsigned char header[54], int height, int width
 	unsigned char widthA[4];
 	int bitDepth = *(int *)&header[28];
 	int size = height * width; // calculate image size
+
 	double out_buffer[width][height];
 
-	#pragma omp parallel for private(j) num_threads(threads)
+	#pragma omp parallel for private(j) //num_threads(threads)
 	for (i = 0; i < width; i++) // to rotate right
 	{
 		for (j = 0; j < height; j++)
 		{
-			buffer[i][j][2] = buffer[i][j][2] * 0.11;
-			buffer[i][j][1] = buffer[i][j][1] * 0.59;
-			buffer[i][j][0] = buffer[i][j][0] * 0.3;
-			out_buffer[i][j] = (buffer[i][j][0] + buffer[i][j][1] + buffer[i][j][2]);
+			out_buffer[i][j] = (buffer[i][j][0] * 0.3 + buffer[i][j][1] * 0.59 + buffer[i][j][2] * 0.11);
 		}
 	}
 
@@ -37,10 +35,10 @@ int image_rgbtogray(int threads, unsigned char header[54], int height, int width
 		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
 	}
 
-	#pragma omp parallel for num_threads(threads) private(j) ordered
+	// #pragma omp parallel for num_threads(threads) private(j) ordered
 	for (i = 0; i < width; i++)
 	{
-	#pragma omp ordered
+	// #pragma omp ordered
 		for (j = 0; j < height; j++)
 		{
 			putc(out_buffer[i][j], fOut);

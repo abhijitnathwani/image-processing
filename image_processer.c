@@ -3,11 +3,10 @@
 #include <stdlib.h>
 #include <omp.h>
 #include <math.h>
-
 #include "image_bright.c"
 #include "image_dark.c"
 #include "image_colortosepia.c"
-//#include "image_simulate_cvd.c" //there is an issue related to this piece of code #To be reviewed 
+#include "image_simulate_cvd.c" //there is an issue related to this piece of code #To be reviewed 
 #include "image_correct_cvd.c"
 #include "image_rgbtogray.c"
 #include "black_white.c"
@@ -19,6 +18,7 @@
 int number_of_threads = 1;
 
 int colored() {
+	omp_set_num_threads(14);
 
 	printf("******** This code is executing the colored image processing applications ****** \n");
 	FILE *fIn = fopen("images/airplane.bmp","r");			// Input File name
@@ -30,10 +30,10 @@ int colored() {
 	{											
 		printf("File does not exist.\n");
 	}
-	#pragma omp parallel for num_threads(number_of_threads) ordered
+	#pragma omp parallel for num_threads(1) //ordered
 	for(i=0;i<54;i++)						// read the 54 byte header from fIn
 	{			
-		#pragma omp ordered
+		// #pragma omp ordered
 		{
 			header[i] = getc(fIn);
 			getc(fIn3D);
@@ -51,10 +51,10 @@ int colored() {
 	int size = height*width;		//calculate image size
 	unsigned char D3buffer[width][height][3]; // to store the image data
 	
-	#pragma omp parallel for private(j) num_threads(number_of_threads) ordered
+	#pragma omp parallel for private(j) num_threads(1) //ordered
 	for(int i=0;i<width;i++)											
 	{
-		#pragma omp ordered
+		// #pragma omp ordered
 		for (j=0;j<height;j++){
             D3buffer[i][j][2]=getc(fIn3D);									//blue
             D3buffer[i][j][1]=getc(fIn3D);									//green
@@ -63,9 +63,9 @@ int colored() {
 	}
 	unsigned char buffer[size][3];								//to store the image data
 
-	#pragma omp parallel for num_threads(number_of_threads) ordered 
+	#pragma omp parallel for num_threads(1) //ordered 
 	for(i=0;i<size;i++){
-		#pragma omp ordered
+		// #pragma omp ordered
 		{
 			buffer[i][2] = getc(fIn); // blue
 			buffer[i][1] = getc(fIn); // green
@@ -77,32 +77,32 @@ int colored() {
 	printf("size: %d\n",size);
 	#pragma omp parallel sections
 	{
-		// #pragma omp section
-		// image_colortosepia(header, size, buffer);
+		#pragma omp section
+		image_colortosepia(header, size, buffer);
 
-		// #pragma omp section
-		// simulate_cvd_protanopia(header, size, buffer);
+		#pragma omp section
+		simulate_cvd_protanopia(header, size, buffer);
 
-		// #pragma omp section
-		// simulate_cvd_deuteranopia(header, size, buffer);
+		#pragma omp section
+		simulate_cvd_deuteranopia(header, size, buffer);
 
-		// #pragma omp section
-		// simulate_cvd_tritanopia(header, size, buffer);
+		#pragma omp section
+		simulate_cvd_tritanopia(header, size, buffer);
 
-		// #pragma omp section
-		// correct_cvd_protanopia(header, size, buffer);
+		#pragma omp section
+		correct_cvd_protanopia(header, size, buffer);
 
-		// #pragma omp section
-		// correct_cvd_deuteranopia(header, size, buffer);
+		#pragma omp section
+		correct_cvd_deuteranopia(header, size, buffer);
 
-		// #pragma omp section
-		// correct_cvd_tritanopia(header, size, buffer);
+		#pragma omp section
+		correct_cvd_tritanopia(header, size, buffer);
 
-		// #pragma omp section
-		// black_and_white(header, size, buffer, bitDepth, colorTable);
+		#pragma omp section
+		black_and_white(header, size, buffer, bitDepth, colorTable);
 
-		// #pragma omp section
-		// image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
+		#pragma omp section
+		image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
 
 		#pragma omp section
@@ -128,6 +128,7 @@ int colored() {
 
 
 int nonColored() {
+	omp_set_num_threads(3);
 
 	printf("******** This code is executing the non-colored image processing applications ****** \n");
 
@@ -141,10 +142,10 @@ int nonColored() {
 	{											
 		printf("File does not exist.\n");
 	}
-	#pragma omp parallel for num_threads(number_of_threads) ordered
+	#pragma omp parallel for num_threads(1) //ordered
 	for(i=0;i<54;i++)						// read the 54 byte header from fIn
 	{					
-		#pragma omp ordered
+		// #pragma omp ordered
 		{
 			header[i] = getc(fIn);
 		}			
@@ -174,11 +175,11 @@ int nonColored() {
 	 #pragma omp section
 	image_bluring_gray(header, size, height, width, buffer , bitDepth, colorTable);//lena512.bmp
 	
-	// #pragma omp section 
-    // image_dark(header, colorTable, size, buffer);
+	#pragma omp section 
+    image_dark(header, colorTable, size, buffer);
 
-    // #pragma omp section
-    // image_bright(header, colorTable, size, buffer);
+    #pragma omp section
+    image_bright(header, colorTable, size, buffer);
 }
    	fclose(fIn);
 	return 0;
@@ -192,16 +193,22 @@ int main(int argc, char *argv[]) {
     
 
     double CStart, CStop,NCStart, NCStop;
-   #pragma parallel omp parallel
-    CStart = omp_get_wtime();
-	omp_set_num_threads(9);
-    colored();
-	CStop = omp_get_wtime();
 
-	NCStart = omp_get_wtime();
-	omp_set_num_threads(3);
-	nonColored();
-    NCStop = omp_get_wtime();
+	#pragma omp parallel num_threads(1)
+	{
+		#pragma omp task
+		{
+			CStart = omp_get_wtime();
+			colored();
+			CStop = omp_get_wtime();
+		}
+		#pragma omp task
+		{
+			NCStart = omp_get_wtime();
+			nonColored();
+			NCStop = omp_get_wtime();
+		}
+	}
 
 	printf("colored excution Time: %lf ms\n",((double)(CStop-CStart)*1000));
 	printf("non-colored excution Time: %lf ms\n",((double)(NCStop-NCStart)*1000));

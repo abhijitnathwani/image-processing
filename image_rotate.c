@@ -21,7 +21,7 @@ int image_rgb_rotate_right(int threads, unsigned char header[54], int height, in
 	int size = height*width;								//calculate image size
 	unsigned char out_buffer[height][width][3];
 
-	#pragma omp parallel for private(j, tempH) num_threads(threads)
+	#pragma omp parallel for private(j, tempH) //num_threads(threads)
 	for (i = 0; i < width; i++) // to rotate right
 	{
 		tempH = height;
@@ -34,7 +34,7 @@ int image_rgb_rotate_right(int threads, unsigned char header[54], int height, in
 		}
 	}
 
-	#pragma omp parallel for num_threads(threads)
+	#pragma omp parallel for //num_threads(threads)
 	for (i=0;i<4;i++){
 		heightA[i]=header[18+i];
 		widthA[i]=header[22+i];
@@ -48,10 +48,10 @@ int image_rgb_rotate_right(int threads, unsigned char header[54], int height, in
 		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
 	}
 
-#pragma omp parallel for num_threads(threads) private(j) ordered
+// #pragma omp parallel for num_threads(threads) private(j) ordered
 	for (i = 0; i < height; i++)
 	{
-		#pragma omp ordered
+		// #pragma omp ordered
 		for (j = 0; j < width; j++)
 		{
 			putc(out_buffer[i][j][2], fOut);
@@ -74,7 +74,7 @@ int image_rgb_rotate_left(int threads, unsigned char header[54], int height, int
 	int size = height*width;								//calculate image size
 	unsigned char out_buffer[height][width][3];
 
-	#pragma omp parallel for private(j, tempH) num_threads(threads)
+	#pragma omp parallel for private(j, tempH) //num_threads(threads)
 	for (i = 0; i < height; i++) // to rotate left
 	{
 		tempW = width;
@@ -87,7 +87,7 @@ int image_rgb_rotate_left(int threads, unsigned char header[54], int height, int
 		}
 	}
 
-	#pragma omp parallel for num_threads(threads)
+	#pragma omp parallel for //num_threads(threads)
 	for (i = 0; i < 4; i++)
 	{
 		heightA[i] = header[18 + i];
@@ -101,10 +101,10 @@ int image_rgb_rotate_left(int threads, unsigned char header[54], int height, int
 		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
 	}
 
-	#pragma omp parallel for num_threads(threads) private(j, tempH) ordered
+	// #pragma omp parallel for num_threads(threads) private(j, tempH) ordered
 	for (i = 0; i < height; i++)
 	{
-		#pragma omp ordered
+		// #pragma omp ordered
 		for (j = 0; j < width; j++)
 		{
 			putc(out_buffer[i][j][2], fOut);
@@ -129,7 +129,7 @@ int image_rgb_rotate_180(int threads, unsigned char header[54], int height, int 
 	int size = height*width;								//calculate image size
 	unsigned char out_buffer[width][height][3];
 	
-	#pragma omp parallel for private(j, tempH) num_threads(threads)
+	#pragma omp parallel for private(j, tempH) //num_threads(threads)
 	for (i = width-1; i >= 0; i--) // to rotate left
 	{
 		for (j = height-1; j >= 0; j--)
@@ -146,10 +146,10 @@ int image_rgb_rotate_180(int threads, unsigned char header[54], int height, int 
 		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
 	}
 
-	#pragma omp parallel for num_threads(threads) private(j, tempH) ordered
+	// #pragma omp parallel for num_threads(threads) private(j, tempH) ordered
 	for (i = 0; i < width; i++)
 	{
-	#pragma omp ordered
+	// #pragma omp ordered
 		for (j = 0; j < height; j++)
 		{
 			putc(out_buffer[i][j][2], fOut);
