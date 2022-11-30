@@ -14,36 +14,35 @@
 #include "image_blur_color.c"
 #include "image_blur_gray.c"
 #include "image_rotate.c"
+#include "negative_image.c"
 
+int number_of_threads = 1;
 
 int colored() {
 
 	printf("******** This code is executing the colored image processing applications ****** \n");
-
-
 	FILE *fIn = fopen("images/airplane.bmp","r");			// Input File name
-	FILE *fIn3D = fopen("images/airplane.bmp","r");			// Input File name
+	FILE *fIn3D = fopen("images/airplane.bmp", "r");		// Input File name
 	unsigned char header[54];
 	unsigned char colorTable[1024];
-	int i;
-	
-
+	int i, j;
 	if(fIn==NULL)							// check if the input file has not been opened succesfully.
 	{											
 		printf("File does not exist.\n");
 	}
-		
-	#pragma omp parallel for num_threads(1) 
+	#pragma omp parallel for num_threads(number_of_threads) ordered
 	for(i=0;i<54;i++)						// read the 54 byte header from fIn
-	{								
-		header[i] = getc(fIn);								
+	{			
+		#pragma omp ordered
+		{
+			header[i] = getc(fIn);
+			getc(fIn3D);
+		}												
 	}
 	
     int height = *(int*)&header[18];
 	int width = *(int*)&header[22];
 	int bitDepth = *(int*)&header[28];
-
-
 	if (bitDepth <= 8) // if ColorTable present, extract it.
 	{
 		fread(colorTable, sizeof(unsigned char), 1024, fIn);
@@ -51,35 +50,37 @@ int colored() {
 
 	int size = height*width;		//calculate image size
 	unsigned char D3buffer[width][height][3]; // to store the image data
-
+	
+	#pragma omp parallel for private(j) num_threads(number_of_threads) ordered
 	for(int i=0;i<width;i++)											
 	{
-        for (int j=0;j<height;j++){
+		#pragma omp ordered
+		for (j=0;j<height;j++){
             D3buffer[i][j][2]=getc(fIn3D);									//blue
             D3buffer[i][j][1]=getc(fIn3D);									//green
             D3buffer[i][j][0]=getc(fIn3D);									//red
         }
 	}
-
 	unsigned char buffer[size][3];								//to store the image data
 
-#pragma omp parallel for num_threads(1) 
+	#pragma omp parallel for num_threads(number_of_threads) ordered 
 	for(i=0;i<size;i++){
-
-		buffer[i][2] = getc(fIn);									//blue
-		buffer[i][1] = getc(fIn);									//green
-		buffer[i][0] = getc(fIn);									//red
-
+		#pragma omp ordered
+		{
+			buffer[i][2] = getc(fIn); // blue
+			buffer[i][1] = getc(fIn); // green
+			buffer[i][0] = getc(fIn); // red
+		}
 	}
 	printf("height: %d\n",height);
 	printf("width: %d\n",width);
 	printf("size: %d\n",size);
-#pragma omp parallel sections
-{
-    // #pragma omp section
-    // image_colortosepia(header, size, buffer);
+	#pragma omp parallel sections
+	{
+		// #pragma omp section
+		// image_colortosepia(header, size, buffer);
 
-		// #pragma omp section 
+		// #pragma omp section
 		// simulate_cvd_protanopia(header, size, buffer);
 
 		// #pragma omp section
@@ -87,7 +88,7 @@ int colored() {
 
 		// #pragma omp section
 		// simulate_cvd_tritanopia(header, size, buffer);
-		
+
 		// #pragma omp section
 		// correct_cvd_protanopia(header, size, buffer);
 
@@ -97,19 +98,30 @@ int colored() {
 		// #pragma omp section
 		// correct_cvd_tritanopia(header, size, buffer);
 
-		//  #pragma omp section
-		// black_and_white(header, size, buffer);
-
-	 	#pragma omp section
-		image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
+		// #pragma omp section
+		// black_and_white(header, size, buffer, bitDepth, colorTable);
 
 		// #pragma omp section
-		// image_rgbtogray(header, size, buffer, bitDepth, colorTable);
-		#pragma omp section
-		image_rotate(header, height, width, D3buffer , colorTable);
-}
+		// image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
-   	fclose(fIn);
+
+		#pragma omp section
+		image_rgb_rotate_right(number_of_threads, header, height, width, D3buffer, colorTable);
+
+		#pragma omp section
+		image_rgb_rotate_left(number_of_threads, header, height, width, D3buffer, colorTable);
+
+		#pragma omp section
+		image_rgb_rotate_180(number_of_threads, header, height, width, D3buffer, colorTable);
+
+		#pragma omp section
+		image_negative(number_of_threads, header, height, width, D3buffer, colorTable);
+
+		#pragma omp section
+		image_rgbtogray(number_of_threads, header, height, width, D3buffer, colorTable);
+	}
+
+	fclose(fIn);
 	// fclose(fOut);
 	return 0;
 }
@@ -129,10 +141,13 @@ int nonColored() {
 	{											
 		printf("File does not exist.\n");
 	}
-#pragma omp parallel for num_threads(1) 
+	#pragma omp parallel for num_threads(number_of_threads) ordered
 	for(i=0;i<54;i++)						// read the 54 byte header from fIn
-	{								
-		header[i] = getc(fIn);								
+	{					
+		#pragma omp ordered
+		{
+			header[i] = getc(fIn);
+		}			
 	}
 
     int height = *(int*)&header[18];
@@ -147,15 +162,15 @@ int nonColored() {
 	int size = height*width;	//calculate image size					
 	unsigned char buffer[size];	//to store the image data
 
-#pragma omp parallel for num_threads(1) 
+	#pragma omp parallel for num_threads(1) 
 	for(i=0;i<size;i++){
 		buffer[i] = getc(fIn);			
 	}
 	printf("height: %d\n",height);
 	printf("width: %d\n",width);
 	printf("size: %d\n",size);
-#pragma omp parallel sections
-{
+	#pragma omp parallel sections
+	{
 	 #pragma omp section
 	image_bluring_gray(header, size, height, width, buffer , bitDepth, colorTable);//lena512.bmp
 	

@@ -8,43 +8,46 @@
 #include <stdio.h>
 #include <time.h>
 
-int image_rgbtogray(unsigned char header[54], int size, unsigned char buffer[size][3])
+int image_rgbtogray(int threads, unsigned char header[54], int height, int width, unsigned char buffer[width][height][3], unsigned char colorTable[1024])
 {
-	double start, stop;
-
-	// start = omp_get_wtime();												// Note the start time for profiling purposes.
-	FILE *fOut = fopen("results_imgs/lena_gray.bmp","w+");		    		//Output File name
-
-	int i,j,y;
-	fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
-
-	// extract image height, width and bitDepth from imageHeader
-	int height = *(int *)&header[18];
-	int width = *(int *)&header[22];
+	FILE *fOut = fopen("out/image_gray.bmp", "w+"); // Output File name
+	int i, j;
+	int tempH, tempW;
+	unsigned char heightA[4];
+	unsigned char widthA[4];
 	int bitDepth = *(int *)&header[28];
+	int size = height * width; // calculate image size
+	double out_buffer[width][height];
 
-	// printf("inside rgbtogray : size: %d\n", size);
-	// printf("inside rgbtogray : width: %d\n", width);
-	// printf("inside rgbtogray : height: %d\n", height);
-
-	// #pragma omp parallel for private(y) ordered		
-	for(i=0;i<size;i++)											//RGB to gray
+	#pragma omp parallel for private(j) num_threads(threads)
+	for (i = 0; i < width; i++) // to rotate right
 	{
-
-		// #pragma omp ordered
-		// {
-			y = 0;
-			y = (buffer[i][0] * 0.3) + (buffer[i][1] * 0.59) + (buffer[i][2] * 0.11); // conversion formula of rgb to gray
-			putc(y, fOut);
-			putc(y, fOut);
-			putc(y, fOut);
-		// }
-
-
+		for (j = 0; j < height; j++)
+		{
+			buffer[i][j][2] = buffer[i][j][2] * 0.11;
+			buffer[i][j][1] = buffer[i][j][1] * 0.59;
+			buffer[i][j][0] = buffer[i][j][0] * 0.3;
+			out_buffer[i][j] = (buffer[i][j][0] + buffer[i][j][1] + buffer[i][j][2]);
+		}
 	}
-	
+
+	fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
+	if (bitDepth <= 8)								 // if ColorTable present, extract it.
+	{
+		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
+	}
+
+	#pragma omp parallel for num_threads(threads) private(j) ordered
+	for (i = 0; i < width; i++)
+	{
+	#pragma omp ordered
+		for (j = 0; j < height; j++)
+		{
+			putc(out_buffer[i][j], fOut);
+			putc(out_buffer[i][j], fOut);
+			putc(out_buffer[i][j], fOut);
+		}
+	}
 	fclose(fOut);
-	// stop = omp_get_wtime();
-	// printf("time to convert rgb to gray (ms) = %lf\n", ((double)(stop - start) * 1000.0));
 	return 0;
 }

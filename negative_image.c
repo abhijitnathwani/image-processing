@@ -2,60 +2,40 @@
 #include<stdlib.h>
 #include<time.h>
 
-int main()
+int image_negative(int threads, unsigned char header[54], int height, int width, unsigned char buffer[width][height][3], unsigned char colorTable[1024])
 {
-	clock_t start, stop; 
-	start=clock();
-	FILE* fp = fopen("images/lena512.bmp", "rb");   //read the file//
-
-	unsigned char *imageData; // to store the image information
-	unsigned char *newimageData; // to store the new image information, i.e. the negative image
-        unsigned char imageHeader[54]; // to get the image header
-        unsigned char colorTable[1024]; // to get the colortable
-
+	FILE *fOut = fopen("out/negative_image.bmp", "w+"); // Output File name
 	int i,j; // loop counter variables
+	unsigned char out_buffer[width][height][3];
+	int bitDepth = *(int*)&header[28];
 
-	fread(imageHeader, sizeof(unsigned char), 54, fp); // read the 54-byte from fp to imageHeader
-	      
-	  
-	// extract image height and width from imageHeader      
-        int width = *(int*)&imageHeader[18];
-        int height = *(int*)&imageHeader[22];
-	int bitDepth = *(int*)&imageHeader[28];
-
-        int imgDataSize = width * height; // calculate image size
-
-        imageData = (unsigned char*)malloc (imgDataSize * sizeof(unsigned char)); // allocate the block of memory as big as the image size
-        newimageData = (unsigned char*)malloc (imgDataSize * sizeof(unsigned char));
-	
-	if(bitDepth <= 8)	// COLOR TABLE Present
-		fread(colorTable, sizeof(unsigned char), 1024, fp); // read the 1024-byte from fp to colorTable
-		
-	
-	fread( imageData, sizeof(unsigned char), imgDataSize, fp);
-	   
-		
 	//Calculate the mean of the image
-	for(i = 0; i < height; i++){
-	      for(j = 0; j < width; j++){                   
-		     newimageData[i*width + j] = 255 - imageData[i*width + j]; 
-		 }   
+	#pragma omp parallel for private(j) num_threads(threads)
+	for(i = 0; i < width; i++){
+	      for(j = 0; j < height; j++){
+			  out_buffer[i][j][0] = 0xFF - buffer [i][j][0];
+			  out_buffer[i][j][1] = 0xFF - buffer [i][j][1];
+			  out_buffer[i][j][2] = 0xFF - buffer [i][j][2];
+	      }
 	}
 
-	FILE *fo = fopen("images/lena_negative.bmp", "wb");
+	fwrite(header, sizeof(unsigned char), 54, fOut); // write the header back
+	if (bitDepth <= 8)								 // if ColorTable present, extract it.
+	{
+		fwrite(colorTable, sizeof(unsigned char), 1024, fOut);
+	}
 
-        fwrite(imageHeader, sizeof(unsigned char), 54, fo); // write the header back.
-
-	if(bitDepth <= 8)	// COLOR TABLE Present
-        	fwrite(colorTable, sizeof(unsigned char), 1024, fo); // write the color table back
-	
-        fwrite( newimageData, sizeof(unsigned char), imgDataSize, fo); // write the values of the negative image.
-
-        fclose(fo);
-	fclose(fp);
-        stop = clock(); 
-	double d = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;                                                   
-        printf("%lf\n",d);
-
+	#pragma omp parallel for num_threads(threads) private(j) ordered
+	for (i = 0; i < width; i++)
+	{
+		#pragma omp ordered
+		for (j = 0; j < height; j++)
+		{
+			putc(out_buffer[i][j][2], fOut);
+			putc(out_buffer[i][j][1], fOut);
+			putc(out_buffer[i][j][0], fOut);
+		}
+	}
+	fclose(fOut);
+	return 0;
 }
-// header=imageHeader, data=imageData,
