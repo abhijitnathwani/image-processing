@@ -11,18 +11,20 @@
 #include "image_correct_cvd.c"
 #include "image_rgbtogray.c"
 #include "black_white.c"
+#include "image_blur_color.c"
+#include "image_blur_gray.c"
 
 int colored() {
 
 	printf("******** This code is executing the colored image processing applications ****** \n");
 
 
-	FILE *fIn = fopen("images/lena512.bmp","r");			// Input File name
-	FILE *fIn3D = fopen("images/lena512.bmp","r");			// Input File name
+	FILE *fIn = fopen("images/airplane.bmp","r");			// Input File name
+	FILE *fIn3D = fopen("images/airplane.bmp","r");			// Input File name
 	unsigned char header[54];
 	unsigned char colorTable[1024];
 	int i;
-	unsigned char colorTable[1024];
+	
 
 	if(fIn==NULL)							// check if the input file has not been opened succesfully.
 	{											
@@ -99,8 +101,8 @@ int colored() {
 	 	#pragma omp section
 		image_bluring_color(header, size, height, width, buffer , bitDepth, colorTable);
 
-		#pragma omp section
-		image_rgbtogray(header, size, D3buffer, bitDepth, colorTable);
+		// #pragma omp section
+		// image_rgbtogray(header, size, D3buffer, bitDepth, colorTable);
 }
 
    	fclose(fIn);
@@ -184,5 +186,5 @@ int main(int argc, char *argv[]) {
 
 	printf("colored excution Time: %lf ms\n",((double)(CStop-CStart)*1000));
 	printf("non-colored excution Time: %lf ms\n",((double)(NCStop-NCStart)*1000));
-	printf("colored excution Time: %lf ms\n",((double)((NCStop+CStop)-(NCStart+CStart))*1000));
+	printf("overall excution Time: %lf ms\n",((double)((NCStop+CStop)-(NCStart+CStart))*1000));
 }
