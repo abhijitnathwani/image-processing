@@ -19,8 +19,8 @@ int main()
 	      
 	  
 	// extract image height and width from imageHeader      
-        int width = *(int*)&imageHeader[18];
-        int height = *(int*)&imageHeader[22];
+        int width = *(int*)&imageHeader[18] * 3; // each pixel has 3 bytes of data (red, green and blue)
+        int height = *(int*)&imageHeader[22] * 3;
 	int bitDepth = *(int*)&imageHeader[28];
 
         int imgDataSize = width * height; // calculate image size
